@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
   :root {
     --bg: #0c0e10;
@@ -503,6 +504,12 @@
     color: var(--text-faint);
     letter-spacing: 0.05em;
   }
+  @media print {
+    html, body { background: #fff !important; }
+    body { color: #111 !important; padding: 16px !important; background-image: none !important; }
+    .controls, .live, .theme-toggle, .footer-note, .run-del { display: none !important; }
+    .panel, .device-card { border-color: #ccc !important; break-inside: avoid; }
+  }
 </style>
 <script>
   // Pre-paint: zet het thema vóór de eerste render zodat er geen flits is.
@@ -568,6 +575,7 @@
     <button class="btn btn-ghost" id="export-btn">Export JSON</button>
     <button class="btn btn-ghost" id="import-btn">Import JSON</button>
     <button class="btn btn-ghost" id="sync-btn">☁ Sync naar cloud</button>
+    <button class="btn btn-ghost" id="pdf-btn">⬇ PDF-rapport</button>
     <input type="file" id="import-file" accept="application/json,.json" hidden />
   </div>
 
@@ -1867,6 +1875,143 @@ document.getElementById('export-btn').addEventListener('click', async () => {
 });
 
 document.getElementById('sync-btn').addEventListener('click', syncLocalToCloud);
+
+// ============================================================
+// PDF-RAPPORT (client-side via jsPDF)
+// ============================================================
+async function generatePdfReport() {
+  if (!(window.jspdf && window.jspdf.jsPDF)) {
+    log('PDF-bibliotheek niet geladen — ik open het print-dialoog (kies daar "Bewaar als PDF").', 'warn');
+    window.print();
+    return;
+  }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+  const M = 40;
+  const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
+  let y = M;
+
+  const runs = await getMergedRuns();
+  const now = new Date();
+  const stamp = now.toISOString().slice(0, 16).replace('T', ' ');
+
+  // Header
+  doc.setTextColor(20, 20, 20); doc.setFont('helvetica', 'bold'); doc.setFontSize(20);
+  doc.text('device.bench', M, y + 4);
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(11); doc.setTextColor(110, 110, 110);
+  doc.text('Benchmark rapport', M, y + 20);
+  doc.setFontSize(9);
+  doc.text('Gegenereerd: ' + stamp, pageW - M, y + 4, { align: 'right' });
+  y += 34;
+  doc.setDrawColor(210, 210, 210); doc.line(M, y, pageW - M, y); y += 18;
+
+  // Device
+  doc.setTextColor(20, 20, 20); doc.setFont('helvetica', 'bold'); doc.setFontSize(12);
+  doc.text('Toestel (deze browser)', M, y); y += 16;
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(10);
+  const txt = (id) => (document.getElementById(id)?.textContent || '—');
+  const dev = [
+    ['CPU cores', txt('cores')],
+    ['Device memory', txt('ram')],
+    ['Platform', txt('platform')],
+    ['User agent', navigator.userAgent],
+  ];
+  dev.forEach(([k, v]) => {
+    doc.setTextColor(125, 125, 125); doc.text(k, M, y);
+    doc.setTextColor(40, 40, 40);
+    const lines = doc.splitTextToSize(String(v), pageW - M - (M + 120));
+    doc.text(lines, M + 120, y);
+    y += 14 * lines.length;
+  });
+  y += 10;
+
+  // Results table
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(12); doc.setTextColor(20, 20, 20);
+  doc.text('Resultaten — ' + runs.length + ' run' + (runs.length === 1 ? '' : 's'), M, y); y += 14;
+
+  const cols = [
+    { t: 'Label', w: 150, a: 'left' },
+    { t: 'Bron', w: 70, a: 'left' },
+    { t: 'Cores', w: 38, a: 'right' },
+    { t: 'Single', w: 68, a: 'right' },
+    { t: 'Multi', w: 68, a: 'right' },
+    { t: 'Throttle', w: 52, a: 'right' },
+    { t: 'Piekdruk', w: 69, a: 'left' },
+  ];
+  const tableW = cols.reduce((a, c) => a + c.w, 0);
+  const rowH = 16;
+  function drawHeaderRow() {
+    doc.setFillColor(238, 240, 243); doc.rect(M, y, tableW, rowH, 'F');
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(8.5); doc.setTextColor(70, 70, 70);
+    let x = M;
+    cols.forEach(c => { doc.text(c.t, c.a === 'right' ? x + c.w - 4 : x + 4, y + 11, { align: c.a }); x += c.w; });
+    y += rowH;
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5);
+  }
+  drawHeaderRow();
+  runs.forEach((r, idx) => {
+    if (y + rowH > pageH - M - 30) { doc.addPage(); y = M; drawHeaderRow(); }
+    if (idx % 2 === 1) { doc.setFillColor(248, 249, 250); doc.rect(M, y, tableW, rowH, 'F'); }
+    const s = r.results || {};
+    const cells = [
+      r.label || '—',
+      r._source || 'lokaal',
+      String(r.device?.cores ?? '—'),
+      s.single?.opsPerSec ? s.single.opsPerSec.toFixed(0) : '—',
+      s.multi?.opsPerSec ? s.multi.opsPerSec.toFixed(0) : '—',
+      s.sustained ? s.sustained.throttlePct.toFixed(1) + '%' : '—',
+      s.sustained?.pressure?.supported ? (s.sustained.pressure.peak || '—') : 'n.v.t.',
+    ];
+    doc.setTextColor(40, 40, 40);
+    let x = M;
+    cells.forEach((val, i) => {
+      const c = cols[i];
+      let t = String(val);
+      while (doc.getTextWidth(t) > c.w - 8 && t.length > 1) t = t.slice(0, -2);
+      if (t !== String(val)) t += '…';
+      doc.text(t, c.a === 'right' ? x + c.w - 4 : x + 4, y + 11, { align: c.a });
+      x += c.w;
+    });
+    y += rowH;
+  });
+  y += 18;
+
+  // Throttle chart + pressure strip (huidige sessie, best-effort)
+  try {
+    const chart = document.getElementById('throttle-chart');
+    if (chart && currentSustainedSamples && currentSustainedSamples.length) {
+      if (y + 200 > pageH - M) { doc.addPage(); y = M; }
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(12); doc.setTextColor(20, 20, 20);
+      doc.text('Sustained load — throttle profiel (huidige sessie)', M, y); y += 12;
+      const imgW = pageW - 2 * M;
+      const imgH = Math.min(imgW * (chart.height / chart.width), 230);
+      doc.addImage(chart.toDataURL('image/png'), 'PNG', M, y, imgW, imgH); y += imgH + 12;
+      const strip = document.getElementById('pressure-strip');
+      if (strip && strip.width) {
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(110, 110, 110);
+        doc.text('CPU pressure', M, y + 12);
+        doc.addImage(strip.toDataURL('image/png'), 'PNG', M + 72, y, pageW - 2 * M - 72, 18); y += 28;
+      }
+    }
+  } catch (e) { /* afbeelding overslaan bij fout */ }
+
+  // Footer op elke pagina
+  const pages = doc.internal.getNumberOfPages();
+  for (let p = 1; p <= pages; p++) {
+    doc.setPage(p);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(150, 150, 150);
+    doc.text('Gegenereerd met device.bench · "CPU pressure" is een browser-proxy (Chromium), geen temperatuur in graden.', M, pageH - 20);
+    doc.text(p + '/' + pages, pageW - M, pageH - 20, { align: 'right' });
+  }
+
+  doc.save('device-bench-rapport-' + now.toISOString().slice(0, 10) + '.pdf');
+  log('PDF-rapport gegenereerd (' + runs.length + ' runs).', 'ok');
+}
+
+document.getElementById('pdf-btn').addEventListener('click', () => {
+  generatePdfReport().catch(e => log('PDF maken mislukt: ' + e.message, 'warn'));
+});
 
 document.getElementById('import-btn').addEventListener('click', () => {
   document.getElementById('import-file').click();
