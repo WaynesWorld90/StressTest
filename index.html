@@ -1490,8 +1490,8 @@ async function clearAllRuns() {
 // met enkel select+insert policies (zie de instructies in de chat).
 // Laat ze leeg om de tool puur lokaal te draaien.
 // ============================================================
-const SUPABASE_URL = '';            // bv. 'https://abcdxyz.supabase.co'
-const SUPABASE_ANON_KEY = '';       // de "anon public" key uit Settings → API
+const SUPABASE_URL = 'https://yixhbexagiokxhuttbdy.supabase.co';            // bv. 'https://abcdxyz.supabase.co'
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlpeGhiZXhhZ2lva3hodXR0YmR5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4NzgyNTksImV4cCI6MjA5NTQ1NDI1OX0.GX0q-Dt7q7xRM-hb5oxD_ukNE6TeVzmRXSqkUkBj3B4';       // de "anon public" key uit Settings → API
 const SUPABASE_TABLE = 'runs';
 
 const cloudEnabled = () => !!(SUPABASE_URL && SUPABASE_ANON_KEY);
