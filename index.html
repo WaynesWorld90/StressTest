@@ -504,6 +504,25 @@
     color: var(--text-faint);
     letter-spacing: 0.05em;
   }
+  #runner-canvas {
+    width: 100%;
+    height: 170px;
+    display: block;
+    cursor: pointer;
+    border-radius: 4px;
+    background: var(--bg);
+    border: 1px solid var(--line);
+  }
+  #runner-canvas:focus { outline: 1px solid var(--line-2); }
+  .game-hint {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-faint);
+    margin-top: 8px;
+  }
+  .game-toggle { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+  .game-toggle input { accent-color: var(--accent); cursor: pointer; }
+
   @media print {
     html, body { background: #fff !important; }
     body { color: #111 !important; padding: 16px !important; background-image: none !important; }
@@ -577,6 +596,19 @@
     <button class="btn btn-ghost" id="sync-btn">☁ Sync naar cloud</button>
     <button class="btn btn-ghost" id="pdf-btn">⬇ PDF-rapport</button>
     <input type="file" id="import-file" accept="application/json,.json" hidden />
+  </div>
+
+  <div class="panel" id="game-panel">
+    <div class="panel-header">
+      <div class="panel-title">Wacht-runner — spatie of klik om te springen</div>
+      <span id="game-score" style="font-family: var(--mono); font-size: 11px; color: var(--text-faint);">score 0 · best 0</span>
+    </div>
+    <div class="panel-body">
+      <canvas id="runner-canvas"></canvas>
+      <div class="game-hint">
+        <label class="game-toggle"><input type="checkbox" id="game-autopause" checked> Pauzeer automatisch tijdens een meting (beschermt je scores)</label>
+      </div>
+    </div>
   </div>
 
   <div class="columns">
@@ -1677,6 +1709,7 @@ function getLabel() {
 }
 
 function disableButtons(d) {
+  window.benchRunning = d;   // signaal voor de wacht-runner (auto-pauze)
   ['run-all','run-quick','run-sustained-only','run-teams-only'].forEach(id => {
     document.getElementById(id).disabled = d;
   });
@@ -2091,6 +2124,180 @@ window.addEventListener('resize', async () => {
   const runs = await getMergedRuns();
   drawThrottleChart(currentSustainedSamples, currentBaseline, runs);
 });
+</script>
+<script>
+// ============================================================
+// WACHT-RUNNER — originele endless-runner (geen Google-assets).
+// Geïsoleerd in een eigen IIFE; raakt de benchmark-code niet aan.
+// ============================================================
+(function () {
+  const canvas = document.getElementById('runner-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const scoreEl = document.getElementById('game-score');
+  canvas.tabIndex = 0;
+
+  const cssVar = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim() || '#888';
+
+  let W = 0, H = 0, dpr = 1, ground = 0;
+  function resize() {
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    W = canvas.clientWidth || 600;
+    H = 170;
+    canvas.width = Math.floor(W * dpr);
+    canvas.height = Math.floor(H * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ground = H - 30;
+  }
+
+  const G = 1900, JUMP = 620;
+  const player = { x: 46, w: 26, h: 28, y: 0, vy: 0, onGround: true };
+  let obstacles = [], speed = 300, score = 0, hi = 0, spawnT = 0.6;
+  let state = 'idle', lastTime = 0, legPhase = 0, looping = false;
+  let pauseWatcher = null;
+  const autoPauseEl = document.getElementById('game-autopause');
+  let autoPause = autoPauseEl ? autoPauseEl.checked : true;
+
+  try { hi = parseInt(localStorage.getItem('runner-hi') || '0') || 0; } catch (e) {}
+
+  function reset() {
+    obstacles = []; score = 0; speed = 300; spawnT = 0.6;
+    player.y = 0; player.vy = 0; player.onGround = true;
+  }
+  function start() {
+    reset(); state = 'running'; lastTime = performance.now();
+    if (!looping) { looping = true; requestAnimationFrame(loop); }
+  }
+  function jump() {
+    if (state !== 'running') { start(); return; }
+    if (player.onGround) { player.vy = -JUMP; player.onGround = false; }
+  }
+
+  function spawn() {
+    obstacles.push({ x: W + 10, w: 12 + Math.random() * 16, h: 18 + Math.random() * 26 });
+  }
+  function hit(ax, ay, aw, ah, bx, by, bw, bh) {
+    return ax < bx + bw && ax + aw > bx && ay < by + bh && ay + ah > by;
+  }
+
+  function update(dt) {
+    speed += dt * 6;
+    score += dt * speed * 0.05;
+    player.vy += G * dt;
+    player.y += player.vy * dt;
+    if (player.y >= 0) { player.y = 0; player.vy = 0; player.onGround = true; }
+    legPhase += dt * speed * 0.06;
+    spawnT -= dt;
+    if (spawnT <= 0) { spawn(); spawnT = (0.9 + Math.random() * 0.8) * (300 / speed) + 0.25; }
+    obstacles.forEach(o => o.x -= speed * dt);
+    obstacles = obstacles.filter(o => o.x + o.w > -5);
+    const py = ground - player.h + player.y;
+    for (const o of obstacles) {
+      if (hit(player.x + 3, py + 3, player.w - 6, player.h - 4, o.x, ground - o.h, o.w, o.h)) {
+        state = 'over';
+        if (score > hi) { hi = Math.floor(score); try { localStorage.setItem('runner-hi', String(hi)); } catch (e) {} }
+        break;
+      }
+    }
+  }
+
+  function rr(x, y, w, h, r) {
+    r = Math.min(r, w / 2, h / 2);
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    // ground
+    ctx.strokeStyle = cssVar('--line-2'); ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(0, ground + 2); ctx.lineTo(W, ground + 2); ctx.stroke();
+    ctx.fillStyle = cssVar('--line');
+    const off = (performance.now() * 0.001 * speed) % 40;
+    for (let x = -off; x < W; x += 40) ctx.fillRect(x, ground + 8, 14, 2);
+    // obstacles
+    ctx.fillStyle = cssVar('--accent-2');
+    obstacles.forEach(o => { rr(o.x, ground - o.h, o.w, o.h, 3); ctx.fill(); });
+    // creature
+    const c = cssVar('--accent');
+    const bodyTop = ground - player.h + player.y;
+    ctx.fillStyle = c;
+    rr(player.x, bodyTop + 6, player.w, player.h - 6, 5); ctx.fill();         // body
+    rr(player.x + player.w - 10, bodyTop, 16, 14, 4); ctx.fill();             // head
+    ctx.fillStyle = cssVar('--bg');
+    ctx.fillRect(player.x + player.w + 1, bodyTop + 4, 3, 3);                 // eye
+    ctx.fillStyle = c;
+    const swing = player.onGround ? Math.sin(legPhase) * 4 : 0;
+    ctx.fillRect(player.x + 4, ground - 6 + player.y, 4, 6 + swing);          // legs
+    ctx.fillRect(player.x + 14, ground - 6 + player.y, 4, 6 - swing);
+    // hud
+    ctx.fillStyle = cssVar('--text-faint'); ctx.font = '12px IBM Plex Mono'; ctx.textAlign = 'right';
+    ctx.fillText('score ' + Math.floor(score) + ' · best ' + hi, W - 6, 16);
+    if (scoreEl) scoreEl.textContent = 'score ' + Math.floor(score) + ' · best ' + hi;
+    if (state !== 'running') {
+      ctx.textAlign = 'center'; ctx.fillStyle = cssVar('--text'); ctx.font = '600 14px IBM Plex Sans';
+      let msg = 'Spatie of klik om te starten';
+      if (state === 'over') msg = 'Game over — spatie of klik voor opnieuw';
+      else if (state === 'paused') msg = 'Gepauzeerd — meting bezig, hervat zodra klaar';
+      ctx.fillText(msg, W / 2, ground / 2);
+    }
+  }
+
+  // Pauzeert de game en draait een lage-frequentie watcher (i.p.v. 60fps
+  // tekenen) zodat hij tijdens een meting nauwelijks CPU gebruikt.
+  function enterPause() {
+    state = 'paused';
+    looping = false;
+    draw();
+    if (!pauseWatcher) {
+      pauseWatcher = setInterval(() => {
+        if (!(autoPause && window.benchRunning)) {
+          clearInterval(pauseWatcher); pauseWatcher = null;
+          if (state === 'paused') {
+            state = 'running'; lastTime = performance.now();
+            if (!looping) { looping = true; requestAnimationFrame(loop); }
+          }
+        }
+      }, 300);
+    }
+  }
+
+  function loop(t) {
+    const dt = Math.min((t - lastTime) / 1000, 0.05);
+    lastTime = t;
+    if (state === 'running') {
+      if (autoPause && window.benchRunning) { enterPause(); return; }
+      update(dt);
+    }
+    draw();
+    if (state === 'running') requestAnimationFrame(loop);
+    else looping = false;
+  }
+
+  canvas.addEventListener('pointerdown', () => { canvas.focus(); jump(); });
+  if (autoPauseEl) autoPauseEl.addEventListener('change', () => {
+    autoPause = autoPauseEl.checked;
+    if (!autoPause && state === 'paused') {
+      if (pauseWatcher) { clearInterval(pauseWatcher); pauseWatcher = null; }
+      state = 'running'; lastTime = performance.now();
+      if (!looping) { looping = true; requestAnimationFrame(loop); }
+    }
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.code === 'Space' || e.code === 'ArrowUp') {
+      if (state === 'running' || document.activeElement === canvas) { e.preventDefault(); jump(); }
+    }
+  });
+  window.addEventListener('resize', () => { resize(); if (state !== 'running') draw(); });
+
+  resize();
+  draw();
+})();
 </script>
 </body>
 </html>
