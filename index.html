@@ -1,0 +1,1532 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>MacBook Benchmark — Neo · Air · Pro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0c0e10;
+    --bg-2: #14171a;
+    --bg-3: #1c2024;
+    --line: #2a3138;
+    --line-2: #3a444d;
+    --text: #e6ecf0;
+    --text-dim: #8a96a0;
+    --text-faint: #525c66;
+    --accent: #ffb338;
+    --accent-2: #4ec9b0;
+    --warn: #ff6b6b;
+    --ok: #6dd58c;
+    --mono: 'IBM Plex Mono', ui-monospace, monospace;
+    --sans: 'IBM Plex Sans', system-ui, sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 32px 24px 80px;
+    background-image:
+      radial-gradient(circle at 20% 0%, rgba(255, 179, 56, 0.05), transparent 50%),
+      radial-gradient(circle at 80% 100%, rgba(78, 201, 176, 0.04), transparent 50%);
+  }
+
+  .wrap { max-width: 1240px; margin: 0 auto; }
+
+  /* Header */
+  header {
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 24px;
+    margin-bottom: 32px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 24px;
+    align-items: end;
+  }
+  .brand { display: flex; flex-direction: column; gap: 4px; }
+  .brand-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    color: var(--text-faint);
+    text-transform: uppercase;
+  }
+  .brand-title {
+    font-family: var(--mono);
+    font-size: 32px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  .brand-title .dot { color: var(--accent); }
+  .brand-sub {
+    font-size: 14px;
+    color: var(--text-dim);
+    margin-top: 4px;
+  }
+  .meta {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-faint);
+    text-align: right;
+    line-height: 1.6;
+  }
+  .meta strong { color: var(--text-dim); font-weight: 500; }
+
+  /* Device card */
+  .device-card {
+    background: var(--bg-2);
+    border: 1px solid var(--line);
+    padding: 20px 24px;
+    margin-bottom: 32px;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 2fr;
+    gap: 24px;
+  }
+  .device-cell { display: flex; flex-direction: column; gap: 6px; }
+  .device-cell .label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+  }
+  .device-cell .value {
+    font-family: var(--mono);
+    font-size: 15px;
+    color: var(--text);
+  }
+  .label-input {
+    background: var(--bg-3);
+    border: 1px solid var(--line-2);
+    color: var(--text);
+    padding: 8px 10px;
+    font-family: var(--mono);
+    font-size: 14px;
+    width: 100%;
+  }
+  .label-input:focus { outline: none; border-color: var(--accent); }
+
+  /* Layout */
+  .columns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+  @media (max-width: 980px) {
+    .columns { grid-template-columns: 1fr; }
+    .device-card { grid-template-columns: 1fr 1fr; }
+    header { grid-template-columns: 1fr; }
+    .meta { text-align: left; }
+  }
+
+  .panel {
+    background: var(--bg-2);
+    border: 1px solid var(--line);
+    margin-bottom: 24px;
+  }
+  .panel-header {
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--bg-3);
+  }
+  .panel-title {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .panel-title::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    background: var(--accent);
+    display: inline-block;
+  }
+  .panel-body { padding: 20px; }
+
+  /* Test row */
+  .test {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    gap: 16px;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px dashed var(--line);
+  }
+  .test:last-child { border-bottom: none; }
+  .test-info { display: flex; flex-direction: column; gap: 4px; }
+  .test-name { font-size: 14px; font-weight: 500; }
+  .test-desc { font-size: 12px; color: var(--text-dim); }
+  .test-result {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--text-dim);
+    min-width: 140px;
+    text-align: right;
+  }
+  .test-result.done { color: var(--accent-2); }
+  .test-result.running { color: var(--accent); }
+  .test-status {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--line-2);
+  }
+  .test-status.running { background: var(--accent); animation: pulse 1s infinite; }
+  .test-status.done { background: var(--ok); }
+  .test-status.err { background: var(--warn); }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  /* Buttons */
+  .btn {
+    background: var(--accent);
+    color: #1a1208;
+    border: none;
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 10px 18px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn:hover { background: #ffc05a; transform: translateY(-1px); }
+  .btn:disabled { background: var(--line-2); color: var(--text-faint); cursor: not-allowed; transform: none; }
+  .btn-ghost {
+    background: transparent;
+    border: 1px solid var(--line-2);
+    color: var(--text-dim);
+  }
+  .btn-ghost:hover { background: var(--bg-3); color: var(--text); border-color: var(--text-dim); transform: none; }
+  .btn-warn { background: transparent; border: 1px solid var(--warn); color: var(--warn); }
+  .btn-warn:hover { background: rgba(255, 107, 107, 0.1); transform: none; }
+
+  /* Run controls */
+  .controls {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+
+  /* Live readout */
+  .live {
+    font-family: var(--mono);
+    font-size: 12px;
+    background: var(--bg);
+    border: 1px solid var(--line);
+    padding: 12px 16px;
+    min-height: 120px;
+    max-height: 220px;
+    overflow-y: auto;
+    color: var(--text-dim);
+    line-height: 1.7;
+    margin-bottom: 16px;
+  }
+  .live .line.in { color: var(--accent); }
+  .live .line.ok { color: var(--ok); }
+  .live .line.warn { color: var(--warn); }
+
+  /* Charts */
+  canvas.chart { width: 100%; display: block; }
+  .chart-wrap {
+    background: var(--bg);
+    border: 1px solid var(--line);
+    padding: 16px;
+  }
+  .chart-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-top: 12px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+  .chart-legend .item { display: flex; align-items: center; gap: 6px; }
+  .chart-legend .swatch { width: 10px; height: 10px; }
+
+  /* History */
+  .run-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr auto;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px dashed var(--line);
+    align-items: center;
+    font-size: 13px;
+  }
+  .run-row.header {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 8px;
+  }
+  .run-label { font-weight: 500; color: var(--text); }
+  .run-meta { font-family: var(--mono); color: var(--text-dim); font-size: 12px; }
+  .run-del {
+    background: none;
+    border: none;
+    color: var(--text-faint);
+    cursor: pointer;
+    font-family: var(--mono);
+    font-size: 11px;
+  }
+  .run-del:hover { color: var(--warn); }
+  .empty {
+    color: var(--text-faint);
+    font-size: 13px;
+    padding: 16px 0;
+    text-align: center;
+    font-style: italic;
+  }
+
+  /* Throttling badge */
+  .throttle-badge {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 3px 8px;
+    border: 1px solid;
+    margin-left: 8px;
+  }
+  .throttle-badge.green { color: var(--ok); border-color: var(--ok); }
+  .throttle-badge.amber { color: var(--accent); border-color: var(--accent); }
+  .throttle-badge.red { color: var(--warn); border-color: var(--warn); }
+
+  /* Visual workload area */
+  .workload-arena {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    background: var(--bg);
+    border: 1px solid var(--line);
+    padding: 8px;
+    margin-bottom: 12px;
+  }
+  .workload-arena canvas {
+    width: 100%;
+    aspect-ratio: 4/3;
+    background: #000;
+  }
+
+  /* Toggle */
+  .opt-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 8px 0;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+  .opt-row input[type="number"] {
+    background: var(--bg-3);
+    border: 1px solid var(--line-2);
+    color: var(--text);
+    padding: 4px 8px;
+    font-family: var(--mono);
+    font-size: 12px;
+    width: 70px;
+  }
+
+  /* Note */
+  .note {
+    background: var(--bg-3);
+    border-left: 2px solid var(--accent);
+    padding: 12px 16px;
+    margin-bottom: 24px;
+    font-size: 13px;
+    color: var(--text-dim);
+    line-height: 1.6;
+  }
+  .note strong { color: var(--text); }
+
+  /* Comparison panel */
+  .compare-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+    font-size: 13px;
+  }
+  .compare-bar .label-col {
+    width: 130px;
+    font-family: var(--mono);
+    color: var(--text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .compare-bar .bar-track {
+    flex: 1;
+    background: var(--bg);
+    border: 1px solid var(--line);
+    height: 22px;
+    position: relative;
+    overflow: hidden;
+  }
+  .compare-bar .bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    transition: width 0.4s;
+  }
+  .compare-bar .value-col {
+    width: 110px;
+    text-align: right;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+
+  .footer-note {
+    text-align: center;
+    margin-top: 48px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-faint);
+    letter-spacing: 0.05em;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <div class="brand-label">// Benchmark Suite</div>
+      <div class="brand-title">macbook<span class="dot">.</span>bench</div>
+      <div class="brand-sub">Teams &amp; browser-workload profiler — Neo · Air · Pro</div>
+    </div>
+    <div class="meta" id="meta-block">
+      <div><strong>HOST</strong> — detecting…</div>
+      <div><strong>BUILD</strong> — 1.0 · local-only</div>
+    </div>
+  </header>
+
+  <div class="note">
+    <strong>Wat dit doet:</strong> deze tool benadert Teams-achtige workloads in de browser (multi-tab, video-grid, scroll, sustained CPU). Het is geen vervanging voor échte Teams, maar geeft je een reproduceerbaar profiel per machine. <strong>Belangrijk voor de Neo:</strong> let vooral op de <em>sustained-load</em> grafiek — een fanless A18 Pro hoort daar zichtbaar te throttelen.
+  </div>
+
+  <div class="device-card" id="device-card">
+    <div class="device-cell">
+      <div class="label">CPU Cores</div>
+      <div class="value" id="cores">—</div>
+    </div>
+    <div class="device-cell">
+      <div class="label">Device Memory</div>
+      <div class="value" id="ram">—</div>
+    </div>
+    <div class="device-cell">
+      <div class="label">Platform</div>
+      <div class="value" id="platform">—</div>
+    </div>
+    <div class="device-cell">
+      <div class="label">Run Label (verplicht)</div>
+      <input type="text" class="label-input" id="run-label" placeholder="bv. Neo - 8GB - Indigo" />
+    </div>
+  </div>
+
+  <div class="controls">
+    <button class="btn" id="run-all">▶ Run Full Suite</button>
+    <button class="btn btn-ghost" id="run-quick">Run Quick (zonder sustained)</button>
+    <button class="btn btn-ghost" id="run-sustained-only">Alleen Sustained Load</button>
+    <button class="btn btn-ghost" id="run-teams-only">Alleen Teams Simulation</button>
+    <button class="btn btn-ghost" id="export-btn">Export JSON</button>
+  </div>
+
+  <div class="columns">
+
+    <!-- LEFT: Tests + Live -->
+    <div>
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Test Pipeline</div>
+          <div class="panel-title" style="color: var(--text-faint);" id="elapsed-readout">00:00</div>
+        </div>
+        <div class="panel-body" id="tests-list">
+          <!-- populated by JS -->
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Live Output</div>
+        </div>
+        <div class="panel-body" style="padding: 12px;">
+          <div class="live" id="live"></div>
+          <div class="opt-row">
+            <label>Sustained duur (sec)</label>
+            <input type="number" id="sustained-sec" value="120" min="30" max="600" />
+            <label style="margin-left: 16px;">Sample interval (sec)</label>
+            <input type="number" id="sample-sec" value="3" min="1" max="30" />
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Teams Workload Sim</div>
+        </div>
+        <div class="panel-body">
+          <div class="workload-arena" id="workload-arena">
+            <canvas id="vid-0" width="320" height="240"></canvas>
+            <canvas id="vid-1" width="320" height="240"></canvas>
+            <canvas id="vid-2" width="320" height="240"></canvas>
+            <canvas id="vid-3" width="320" height="240"></canvas>
+          </div>
+          <div style="font-family: var(--mono); font-size: 11px; color: var(--text-faint);">
+            4× animated video tiles + blur filter + scroll + chat-DOM churn.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Charts + History -->
+    <div>
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Sustained Load — Throttle Profile</div>
+          <span id="throttle-summary" style="font-family: var(--mono); font-size: 11px; color: var(--text-faint);"></span>
+        </div>
+        <div class="panel-body">
+          <div class="chart-wrap">
+            <canvas class="chart" id="throttle-chart" width="600" height="280"></canvas>
+          </div>
+          <div class="chart-legend">
+            <div class="item"><span class="swatch" style="background: var(--accent);"></span>Huidige run</div>
+            <div class="item"><span class="swatch" style="background: var(--accent-2);"></span>Eerdere runs (max)</div>
+            <div class="item"><span class="swatch" style="background: var(--text-faint);"></span>100% baseline</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Cross-Device Comparison</div>
+          <select id="compare-metric" class="label-input" style="width: auto; padding: 4px 8px; font-size: 12px;">
+            <option value="singleScore">Single-thread Score</option>
+            <option value="multiScore">Multi-thread Score</option>
+            <option value="memScore">Memory Bandwidth</option>
+            <option value="domScore">DOM Render</option>
+            <option value="fpsScore">Canvas FPS</option>
+            <option value="teamsScore">Teams Sim FPS</option>
+            <option value="memPressureScore">Memory Pressure</option>
+            <option value="throttleScore">Throttle Resistance %</option>
+          </select>
+        </div>
+        <div class="panel-body" id="compare-list">
+          <div class="empty">Run minstens één benchmark om te vergelijken.</div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Run History</div>
+          <button class="btn btn-warn" id="clear-all" style="padding: 4px 10px; font-size: 10px;">Clear All</button>
+        </div>
+        <div class="panel-body" id="history-list">
+          <div class="empty">Nog geen runs opgeslagen.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-note">
+    Resultaten worden lokaal opgeslagen via Claude artifact storage. Niet gedeeld met andere users.
+  </div>
+</div>
+
+<script>
+// ============================================================
+// DEVICE DETECTION
+// ============================================================
+function detectDevice() {
+  const cores = navigator.hardwareConcurrency || 'n/a';
+  const ram = navigator.deviceMemory ? navigator.deviceMemory + ' GB' : 'n/a (gated)';
+  let platform = 'n/a';
+  if (navigator.userAgentData && navigator.userAgentData.platform) {
+    platform = navigator.userAgentData.platform;
+  } else if (navigator.platform) {
+    platform = navigator.platform;
+  }
+  document.getElementById('cores').textContent = cores;
+  document.getElementById('ram').textContent = ram;
+  document.getElementById('platform').textContent = platform;
+
+  document.getElementById('meta-block').innerHTML = `
+    <div><strong>HOST</strong> — ${platform}</div>
+    <div><strong>UA</strong> — ${navigator.userAgent.slice(0, 60)}…</div>
+    <div><strong>TS</strong> — ${new Date().toISOString().slice(0, 19).replace('T', ' ')}</div>
+  `;
+}
+detectDevice();
+
+// ============================================================
+// LIVE LOG
+// ============================================================
+const liveEl = document.getElementById('live');
+function log(msg, type = '') {
+  const line = document.createElement('div');
+  line.className = 'line ' + type;
+  const ts = new Date().toISOString().slice(11, 23);
+  line.textContent = `[${ts}] ${msg}`;
+  liveEl.appendChild(line);
+  liveEl.scrollTop = liveEl.scrollHeight;
+}
+
+// ============================================================
+// TEST DEFINITIONS
+// ============================================================
+const TESTS = [
+  { id: 'single', name: 'CPU Single-thread', desc: 'Mandelbrot iteraties, 1 core, 3s burst' },
+  { id: 'multi', name: 'CPU Multi-thread', desc: 'Zelfde workload over alle Web Workers' },
+  { id: 'mem', name: 'Memory Bandwidth', desc: 'Float32Array read/write, 64 MB buffer' },
+  { id: 'dom', name: 'DOM Render', desc: '8000 elementen aanmaken + layout' },
+  { id: 'fps', name: 'Canvas Animation', desc: '200 bewegende shapes, 5s FPS gemiddelde' },
+  { id: 'memPressure', name: 'Memory Pressure', desc: 'Progressieve allocatie, detecteert GC pauzes' },
+  { id: 'teams', name: 'Teams Simulation', desc: '4× video tiles + blur + scroll-DOM, 15s' },
+  { id: 'sustained', name: 'Sustained Load (Throttle)', desc: 'Continue CPU load — KEY voor fanless Neo' },
+];
+
+function renderTestList() {
+  const container = document.getElementById('tests-list');
+  container.innerHTML = '';
+  TESTS.forEach(t => {
+    const row = document.createElement('div');
+    row.className = 'test';
+    row.innerHTML = `
+      <div class="test-info">
+        <div class="test-name">${t.name}</div>
+        <div class="test-desc">${t.desc}</div>
+      </div>
+      <div class="test-result" id="result-${t.id}">—</div>
+      <div class="test-status" id="status-${t.id}"></div>
+    `;
+    container.appendChild(row);
+  });
+}
+renderTestList();
+
+function setStatus(id, state) {
+  const el = document.getElementById('status-' + id);
+  el.className = 'test-status ' + state;
+}
+function setResult(id, txt, state = 'done') {
+  const el = document.getElementById('result-' + id);
+  el.textContent = txt;
+  el.className = 'test-result ' + state;
+}
+
+// ============================================================
+// BENCHMARK: SINGLE-THREAD CPU (Mandelbrot)
+// ============================================================
+async function benchSingle(durationMs = 3000) {
+  await new Promise(r => setTimeout(r, 50));
+  const start = performance.now();
+  let ops = 0;
+  const cx = 0.3, cy = 0.45;
+  while (performance.now() - start < durationMs) {
+    for (let k = 0; k < 5000; k++) {
+      let x = 0, y = 0;
+      for (let i = 0; i < 256; i++) {
+        const x2 = x*x, y2 = y*y;
+        if (x2 + y2 > 4) break;
+        y = 2*x*y + cy;
+        x = x2 - y2 + cx;
+      }
+      ops++;
+    }
+  }
+  const elapsed = (performance.now() - start) / 1000;
+  return { opsPerSec: ops / elapsed, ops, elapsed };
+}
+
+// ============================================================
+// BENCHMARK: MULTI-THREAD CPU (Workers)
+// ============================================================
+function makeWorker() {
+  const code = `
+    self.onmessage = (e) => {
+      const { durationMs } = e.data;
+      const start = performance.now();
+      let ops = 0;
+      const cx = 0.3, cy = 0.45;
+      while (performance.now() - start < durationMs) {
+        for (let k = 0; k < 5000; k++) {
+          let x = 0, y = 0;
+          for (let i = 0; i < 256; i++) {
+            const x2 = x*x, y2 = y*y;
+            if (x2 + y2 > 4) break;
+            y = 2*x*y + cy;
+            x = x2 - y2 + cx;
+          }
+          ops++;
+        }
+      }
+      self.postMessage({ ops, elapsed: (performance.now() - start) / 1000 });
+    };
+  `;
+  const blob = new Blob([code], { type: 'application/javascript' });
+  return new Worker(URL.createObjectURL(blob));
+}
+
+async function benchMulti(durationMs = 3000) {
+  const cores = navigator.hardwareConcurrency || 4;
+  const workers = [];
+  const promises = [];
+  for (let i = 0; i < cores; i++) {
+    const w = makeWorker();
+    workers.push(w);
+    promises.push(new Promise(res => {
+      w.onmessage = (e) => res(e.data);
+    }));
+  }
+  // Start them simultaneously
+  workers.forEach(w => w.postMessage({ durationMs }));
+  const results = await Promise.all(promises);
+  workers.forEach(w => w.terminate());
+  const totalOps = results.reduce((a, r) => a + r.ops, 0);
+  const avgElapsed = results.reduce((a, r) => a + r.elapsed, 0) / results.length;
+  return { opsPerSec: totalOps / avgElapsed, cores, totalOps, avgElapsed };
+}
+
+// ============================================================
+// BENCHMARK: MEMORY BANDWIDTH
+// ============================================================
+async function benchMemory(sizeMB = 64) {
+  await new Promise(r => setTimeout(r, 50));
+  const size = (sizeMB * 1024 * 1024) / 4;
+  let arr;
+  try {
+    arr = new Float32Array(size);
+  } catch (e) {
+    return { error: 'allocation failed', sizeMB };
+  }
+
+  // Write
+  const wStart = performance.now();
+  for (let i = 0; i < size; i++) arr[i] = i * 0.5;
+  const writeMs = performance.now() - wStart;
+
+  // Read
+  const rStart = performance.now();
+  let sum = 0;
+  for (let i = 0; i < size; i++) sum += arr[i];
+  const readMs = performance.now() - rStart;
+
+  return {
+    sizeMB,
+    writeMBps: sizeMB / (writeMs / 1000),
+    readMBps: sizeMB / (readMs / 1000),
+    combinedMBps: (2 * sizeMB) / ((writeMs + readMs) / 1000),
+    _keepalive: sum,
+  };
+}
+
+// ============================================================
+// BENCHMARK: DOM RENDER
+// ============================================================
+async function benchDOM(count = 8000) {
+  await new Promise(r => setTimeout(r, 50));
+  const container = document.createElement('div');
+  container.style.position = 'fixed';
+  container.style.left = '-10000px';
+  container.style.top = '0';
+  container.style.width = '600px';
+  document.body.appendChild(container);
+
+  const start = performance.now();
+  for (let i = 0; i < count; i++) {
+    const el = document.createElement('div');
+    el.textContent = 'msg ' + i + ' — sample chat item';
+    el.style.padding = '6px 10px';
+    el.style.borderBottom = '1px solid #333';
+    el.style.background = i % 2 ? '#1a1a1a' : '#222';
+    el.style.color = '#ddd';
+    el.style.fontFamily = 'monospace';
+    container.appendChild(el);
+  }
+  // Force layout
+  const h = container.offsetHeight;
+  const elapsed = performance.now() - start;
+  document.body.removeChild(container);
+
+  return { count, elapsedMs: elapsed, elemsPerSec: count / (elapsed / 1000), totalHeight: h };
+}
+
+// ============================================================
+// BENCHMARK: CANVAS FPS
+// ============================================================
+async function benchFPS(durationMs = 5000) {
+  return new Promise(resolve => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 800;
+    canvas.height = 500;
+    canvas.style.position = 'fixed';
+    canvas.style.left = '-10000px';
+    document.body.appendChild(canvas);
+    const ctx = canvas.getContext('2d');
+
+    const objs = [];
+    for (let i = 0; i < 200; i++) {
+      objs.push({
+        x: Math.random() * 800,
+        y: Math.random() * 500,
+        vx: (Math.random() - 0.5) * 8,
+        vy: (Math.random() - 0.5) * 8,
+        r: 8 + Math.random() * 20,
+        hue: Math.random() * 360,
+      });
+    }
+
+    const start = performance.now();
+    let frames = 0;
+    function frame() {
+      ctx.fillStyle = '#000';
+      ctx.fillRect(0, 0, 800, 500);
+      for (const o of objs) {
+        o.x += o.vx; o.y += o.vy;
+        if (o.x < 0 || o.x > 800) o.vx *= -1;
+        if (o.y < 0 || o.y > 500) o.vy *= -1;
+        ctx.beginPath();
+        ctx.arc(o.x, o.y, o.r, 0, Math.PI * 2);
+        ctx.fillStyle = `hsl(${o.hue}, 70%, 55%)`;
+        ctx.fill();
+      }
+      frames++;
+      if (performance.now() - start < durationMs) {
+        requestAnimationFrame(frame);
+      } else {
+        const elapsed = (performance.now() - start) / 1000;
+        document.body.removeChild(canvas);
+        resolve({ fps: frames / elapsed, frames, elapsed });
+      }
+    }
+    requestAnimationFrame(frame);
+  });
+}
+
+// ============================================================
+// BENCHMARK: MEMORY PRESSURE
+// ============================================================
+async function benchMemPressure(maxMB = 256, stepMB = 16) {
+  const arrays = [];
+  const samples = [];
+  let allocated = 0;
+  try {
+    while (allocated < maxMB) {
+      const t0 = performance.now();
+      const arr = new Uint8Array(stepMB * 1024 * 1024);
+      // touch pages so it's actually committed
+      for (let i = 0; i < arr.length; i += 4096) arr[i] = 1;
+      const t1 = performance.now();
+      arrays.push(arr);
+      allocated += stepMB;
+      samples.push({ mb: allocated, ms: t1 - t0 });
+      // micro-pause to let GC observe
+      await new Promise(r => setTimeout(r, 30));
+    }
+  } catch (e) {
+    samples.push({ mb: allocated, ms: -1, error: e.message });
+  }
+  // Free
+  arrays.length = 0;
+
+  // Detect "jank" — find inflection where alloc time spikes
+  const median = samples.map(s => s.ms).filter(m => m > 0).sort((a,b) => a-b)[Math.floor(samples.length/2)];
+  const spikes = samples.filter(s => s.ms > median * 3).length;
+  const score = (maxMB - spikes * stepMB) / maxMB * 100;
+
+  return { totalMB: allocated, samples, median, spikes, score };
+}
+
+// ============================================================
+// BENCHMARK: TEAMS SIMULATION
+// ============================================================
+async function benchTeams(durationMs = 15000) {
+  // Use the existing on-screen canvases as "video tiles"
+  const canvases = [
+    document.getElementById('vid-0'),
+    document.getElementById('vid-1'),
+    document.getElementById('vid-2'),
+    document.getElementById('vid-3'),
+  ];
+  const ctxs = canvases.map(c => c.getContext('2d'));
+
+  // Apply blur to tile 0 to simulate background replacement
+  canvases[0].style.filter = 'blur(2px) saturate(1.2)';
+
+  // Hidden chat container
+  const chatContainer = document.createElement('div');
+  chatContainer.style.position = 'fixed';
+  chatContainer.style.left = '-10000px';
+  chatContainer.style.top = '0';
+  chatContainer.style.width = '400px';
+  chatContainer.style.height = '600px';
+  chatContainer.style.overflow = 'auto';
+  document.body.appendChild(chatContainer);
+
+  const start = performance.now();
+  let frames = 0;
+  let chatItems = 0;
+  let stopFlag = false;
+
+  // Animation loop
+  function animate() {
+    if (stopFlag) return;
+    const t = (performance.now() - start) / 1000;
+    canvases.forEach((c, idx) => {
+      const ctx = ctxs[idx];
+      ctx.fillStyle = `hsl(${(idx * 90 + t * 30) % 360}, 50%, 25%)`;
+      ctx.fillRect(0, 0, c.width, c.height);
+      // moving gradient circles to simulate video motion
+      for (let i = 0; i < 8; i++) {
+        const x = c.width/2 + Math.cos(t + i + idx) * 80;
+        const y = c.height/2 + Math.sin(t * 1.3 + i + idx) * 60;
+        const grad = ctx.createRadialGradient(x, y, 5, x, y, 60);
+        grad.addColorStop(0, `hsla(${(i * 45 + idx * 90 + t * 60) % 360}, 80%, 70%, 0.8)`);
+        grad.addColorStop(1, 'transparent');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(x, y, 60, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      // Add text overlay (sim name/mic indicator)
+      ctx.fillStyle = 'rgba(0,0,0,0.5)';
+      ctx.fillRect(8, c.height - 28, 100, 20);
+      ctx.fillStyle = '#fff';
+      ctx.font = '12px monospace';
+      ctx.fillText('user' + idx, 14, c.height - 13);
+    });
+    frames++;
+    requestAnimationFrame(animate);
+  }
+  requestAnimationFrame(animate);
+
+  // Chat churn — add and remove DOM nodes constantly
+  const chatTimer = setInterval(() => {
+    if (stopFlag) return;
+    for (let i = 0; i < 20; i++) {
+      const msg = document.createElement('div');
+      msg.style.padding = '6px';
+      msg.style.borderBottom = '1px solid #333';
+      msg.textContent = '[' + chatItems + '] Lorem ipsum dolor sit amet ' + Math.random().toString(36).slice(2);
+      chatContainer.appendChild(msg);
+      chatItems++;
+    }
+    // Remove old ones to prevent unbounded growth
+    while (chatContainer.children.length > 200) {
+      chatContainer.removeChild(chatContainer.firstChild);
+    }
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+  }, 100);
+
+  await new Promise(r => setTimeout(r, durationMs));
+  stopFlag = true;
+  clearInterval(chatTimer);
+  canvases[0].style.filter = '';
+  document.body.removeChild(chatContainer);
+
+  const elapsed = (performance.now() - start) / 1000;
+  return {
+    fps: frames / elapsed,
+    frames,
+    chatItemsRendered: chatItems,
+    elapsed,
+  };
+}
+
+// ============================================================
+// BENCHMARK: SUSTAINED LOAD (Throttling)
+// ============================================================
+let sustainedActive = false;
+async function benchSustained(durationSec, sampleSec, onSample) {
+  const cores = navigator.hardwareConcurrency || 4;
+  const workerCode = `
+    let stop = false;
+    self.onmessage = (e) => {
+      if (e.data.cmd === 'stop') { stop = true; return; }
+      if (e.data.cmd === 'sample') {
+        const start = performance.now();
+        let ops = 0;
+        const cx = 0.3, cy = 0.45;
+        while (performance.now() - start < e.data.windowMs) {
+          for (let k = 0; k < 1000; k++) {
+            let x = 0, y = 0;
+            for (let i = 0; i < 256; i++) {
+              const x2 = x*x, y2 = y*y;
+              if (x2 + y2 > 4) break;
+              y = 2*x*y + cy;
+              x = x2 - y2 + cx;
+            }
+            ops++;
+          }
+        }
+        self.postMessage({ ops, elapsed: (performance.now() - start) / 1000 });
+      }
+    };
+  `;
+  const blob = new Blob([workerCode], { type: 'application/javascript' });
+  const url = URL.createObjectURL(blob);
+  const workers = [];
+  for (let i = 0; i < cores; i++) workers.push(new Worker(url));
+
+  const samples = [];
+  const startWall = performance.now();
+  sustainedActive = true;
+
+  while (sustainedActive && (performance.now() - startWall) / 1000 < durationSec) {
+    const windowMs = sampleSec * 1000;
+    const promises = workers.map(w => new Promise(res => {
+      w.onmessage = (e) => res(e.data);
+    }));
+    workers.forEach(w => w.postMessage({ cmd: 'sample', windowMs }));
+    const results = await Promise.all(promises);
+    const totalOps = results.reduce((a, r) => a + r.ops, 0);
+    const avgElapsed = results.reduce((a, r) => a + r.elapsed, 0) / results.length;
+    const opsPerSec = totalOps / avgElapsed;
+    const tSec = (performance.now() - startWall) / 1000;
+    const sample = { tSec, opsPerSec };
+    samples.push(sample);
+    onSample && onSample(sample, samples);
+  }
+
+  workers.forEach(w => w.terminate());
+  URL.revokeObjectURL(url);
+  sustainedActive = false;
+
+  // Calculate throttle metrics
+  if (samples.length === 0) return { samples, baselineOpsPerSec: 0, minOpsPerSec: 0, throttlePct: 0 };
+  const baseline = samples[0].opsPerSec;
+  const last5 = samples.slice(-Math.min(5, samples.length));
+  const sustained = last5.reduce((a, s) => a + s.opsPerSec, 0) / last5.length;
+  const minOps = Math.min(...samples.map(s => s.opsPerSec));
+  const throttlePct = (1 - sustained / baseline) * 100;
+
+  return {
+    samples,
+    baselineOpsPerSec: baseline,
+    sustainedOpsPerSec: sustained,
+    minOpsPerSec: minOps,
+    throttlePct,
+    durationSec,
+    cores,
+  };
+}
+
+// ============================================================
+// THROTTLE CHART
+// ============================================================
+const throttleCanvas = document.getElementById('throttle-chart');
+const throttleCtx = throttleCanvas.getContext('2d');
+
+function drawThrottleChart(currentSamples, currentBaseline, allRuns) {
+  const W = throttleCanvas.width = throttleCanvas.offsetWidth * 2;
+  const H = throttleCanvas.height = 560;
+  throttleCanvas.style.height = '280px';
+  const ctx = throttleCtx;
+  ctx.clearRect(0, 0, W, H);
+
+  // Padding
+  const pad = { l: 50, r: 20, t: 20, b: 40 };
+  const plotW = W - pad.l - pad.r;
+  const plotH = H - pad.t - pad.b;
+
+  // Determine ranges
+  let maxOps = currentBaseline || 1;
+  let maxT = 60;
+  if (currentSamples && currentSamples.length) {
+    maxOps = Math.max(maxOps, ...currentSamples.map(s => s.opsPerSec));
+    maxT = Math.max(maxT, currentSamples[currentSamples.length-1].tSec);
+  }
+  (allRuns || []).forEach(r => {
+    if (r.results && r.results.sustained && r.results.sustained.samples) {
+      r.results.sustained.samples.forEach(s => {
+        maxOps = Math.max(maxOps, s.opsPerSec);
+        maxT = Math.max(maxT, s.tSec);
+      });
+    }
+  });
+  maxOps *= 1.1;
+
+  // Background grid
+  ctx.strokeStyle = '#2a3138';
+  ctx.lineWidth = 1;
+  ctx.fillStyle = '#525c66';
+  ctx.font = '20px IBM Plex Mono';
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'middle';
+  for (let i = 0; i <= 5; i++) {
+    const y = pad.t + (i / 5) * plotH;
+    ctx.beginPath();
+    ctx.moveTo(pad.l, y);
+    ctx.lineTo(W - pad.r, y);
+    ctx.stroke();
+    const val = maxOps * (1 - i / 5);
+    ctx.fillText(val.toFixed(0), pad.l - 8, y);
+  }
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  for (let i = 0; i <= 6; i++) {
+    const x = pad.l + (i / 6) * plotW;
+    const t = (i / 6) * maxT;
+    ctx.fillText(t.toFixed(0) + 's', x, H - pad.b + 8);
+  }
+
+  // Baseline reference (100% horizontal)
+  if (currentBaseline) {
+    const y = pad.t + (1 - currentBaseline / maxOps) * plotH;
+    ctx.strokeStyle = '#525c66';
+    ctx.setLineDash([4, 6]);
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(pad.l, y);
+    ctx.lineTo(W - pad.r, y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#525c66';
+    ctx.textAlign = 'left';
+    ctx.fillText('baseline', pad.l + 8, y - 12);
+  }
+
+  // Previous runs (faded)
+  (allRuns || []).forEach(r => {
+    if (r.results && r.results.sustained && r.results.sustained.samples && r.results.sustained.samples.length > 1) {
+      const samp = r.results.sustained.samples;
+      ctx.strokeStyle = 'rgba(78, 201, 176, 0.35)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      samp.forEach((s, i) => {
+        const x = pad.l + (s.tSec / maxT) * plotW;
+        const y = pad.t + (1 - s.opsPerSec / maxOps) * plotH;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+      // label
+      const last = samp[samp.length - 1];
+      const lx = pad.l + (last.tSec / maxT) * plotW;
+      const ly = pad.t + (1 - last.opsPerSec / maxOps) * plotH;
+      ctx.fillStyle = 'rgba(78, 201, 176, 0.7)';
+      ctx.font = '18px IBM Plex Mono';
+      ctx.textAlign = 'left';
+      ctx.fillText(r.label.slice(0, 16), lx + 6, ly);
+    }
+  });
+
+  // Current run
+  if (currentSamples && currentSamples.length > 0) {
+    ctx.strokeStyle = '#ffb338';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    currentSamples.forEach((s, i) => {
+      const x = pad.l + (s.tSec / maxT) * plotW;
+      const y = pad.t + (1 - s.opsPerSec / maxOps) * plotH;
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+    // dots
+    ctx.fillStyle = '#ffb338';
+    currentSamples.forEach(s => {
+      const x = pad.l + (s.tSec / maxT) * plotW;
+      const y = pad.t + (1 - s.opsPerSec / maxOps) * plotH;
+      ctx.beginPath();
+      ctx.arc(x, y, 4, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  }
+
+  // Axis labels
+  ctx.fillStyle = '#8a96a0';
+  ctx.font = '18px IBM Plex Mono';
+  ctx.textAlign = 'left';
+  ctx.fillText('ops/sec ↑', 8, pad.t - 4);
+  ctx.textAlign = 'right';
+  ctx.fillText('tijd →', W - pad.r, H - 8);
+}
+
+// Initial empty chart
+drawThrottleChart([], null, []);
+
+// ============================================================
+// STORAGE
+// ============================================================
+async function saveRun(run) {
+  const key = 'runs:' + run.timestamp;
+  try {
+    await window.storage.set(key, JSON.stringify(run), false);
+    return true;
+  } catch (e) {
+    log('Storage save failed: ' + e.message, 'warn');
+    return false;
+  }
+}
+
+async function loadAllRuns() {
+  try {
+    const list = await window.storage.list('runs:', false);
+    if (!list || !list.keys) return [];
+    const runs = [];
+    for (const k of list.keys) {
+      try {
+        const r = await window.storage.get(k, false);
+        if (r && r.value) runs.push(JSON.parse(r.value));
+      } catch (e) { /* skip */ }
+    }
+    runs.sort((a, b) => b.timestamp - a.timestamp);
+    return runs;
+  } catch (e) {
+    return [];
+  }
+}
+
+async function deleteRun(timestamp) {
+  try {
+    await window.storage.delete('runs:' + timestamp, false);
+  } catch (e) {
+    log('Delete failed: ' + e.message, 'warn');
+  }
+}
+
+async function clearAllRuns() {
+  const runs = await loadAllRuns();
+  for (const r of runs) {
+    await deleteRun(r.timestamp);
+  }
+}
+
+// ============================================================
+// HISTORY & COMPARISON RENDERING
+// ============================================================
+function scoreFromRun(r, metric) {
+  if (!r.results) return null;
+  switch (metric) {
+    case 'singleScore': return r.results.single?.opsPerSec;
+    case 'multiScore': return r.results.multi?.opsPerSec;
+    case 'memScore': return r.results.mem?.combinedMBps;
+    case 'domScore': return r.results.dom?.elemsPerSec;
+    case 'fpsScore': return r.results.fps?.fps;
+    case 'teamsScore': return r.results.teams?.fps;
+    case 'memPressureScore': return r.results.memPressure?.score;
+    case 'throttleScore':
+      if (!r.results.sustained) return null;
+      return 100 - (r.results.sustained.throttlePct || 0);
+  }
+  return null;
+}
+
+function formatScore(val, metric) {
+  if (val == null) return '—';
+  switch (metric) {
+    case 'memScore': return val.toFixed(0) + ' MB/s';
+    case 'fpsScore': case 'teamsScore': return val.toFixed(1) + ' fps';
+    case 'memPressureScore': case 'throttleScore': return val.toFixed(1) + '%';
+    case 'domScore': return val.toFixed(0) + ' el/s';
+    default: return val.toFixed(0) + ' ops/s';
+  }
+}
+
+async function renderHistoryAndCompare() {
+  const runs = await loadAllRuns();
+  const historyEl = document.getElementById('history-list');
+  const compareEl = document.getElementById('compare-list');
+  const metric = document.getElementById('compare-metric').value;
+
+  // History
+  if (runs.length === 0) {
+    historyEl.innerHTML = '<div class="empty">Nog geen runs opgeslagen.</div>';
+    compareEl.innerHTML = '<div class="empty">Run minstens één benchmark om te vergelijken.</div>';
+  } else {
+    let html = '<div class="run-row header"><div>Label</div><div>Cores</div><div>Single CPU</div><div>Tijdstip</div><div></div></div>';
+    runs.forEach(r => {
+      const ts = new Date(r.timestamp).toISOString().slice(0, 16).replace('T', ' ');
+      const single = r.results?.single?.opsPerSec ? r.results.single.opsPerSec.toFixed(0) + ' ops/s' : '—';
+      html += `<div class="run-row">
+        <div class="run-label">${escapeHtml(r.label)}</div>
+        <div class="run-meta">${r.device.cores}</div>
+        <div class="run-meta">${single}</div>
+        <div class="run-meta">${ts}</div>
+        <button class="run-del" data-ts="${r.timestamp}">✕ delete</button>
+      </div>`;
+    });
+    historyEl.innerHTML = html;
+    historyEl.querySelectorAll('.run-del').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        await deleteRun(parseInt(btn.dataset.ts));
+        renderHistoryAndCompare();
+      });
+    });
+
+    // Comparison
+    const withScores = runs.map(r => ({ r, score: scoreFromRun(r, metric) })).filter(x => x.score != null);
+    if (withScores.length === 0) {
+      compareEl.innerHTML = '<div class="empty">Geen runs hebben deze meting (run de bijbehorende test).</div>';
+    } else {
+      const max = Math.max(...withScores.map(x => x.score));
+      let cHtml = '';
+      withScores.sort((a, b) => b.score - a.score).forEach(({ r, score }) => {
+        const pct = (score / max) * 100;
+        cHtml += `<div class="compare-bar">
+          <div class="label-col" title="${escapeHtml(r.label)}">${escapeHtml(r.label)}</div>
+          <div class="bar-track"><div class="bar-fill" style="width: ${pct}%;"></div></div>
+          <div class="value-col">${formatScore(score, metric)}</div>
+        </div>`;
+      });
+      compareEl.innerHTML = cHtml;
+    }
+  }
+
+  // Redraw throttle chart with stored runs
+  drawThrottleChart(currentSustainedSamples, currentBaseline, runs);
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+document.getElementById('compare-metric').addEventListener('change', renderHistoryAndCompare);
+
+// ============================================================
+// ORCHESTRATION
+// ============================================================
+let currentSustainedSamples = [];
+let currentBaseline = null;
+let runStartTime = null;
+let elapsedTimer = null;
+
+function startElapsed() {
+  runStartTime = performance.now();
+  if (elapsedTimer) clearInterval(elapsedTimer);
+  elapsedTimer = setInterval(() => {
+    const s = Math.floor((performance.now() - runStartTime) / 1000);
+    const m = Math.floor(s / 60);
+    const sec = s % 60;
+    document.getElementById('elapsed-readout').textContent =
+      String(m).padStart(2, '0') + ':' + String(sec).padStart(2, '0');
+  }, 250);
+}
+function stopElapsed() {
+  if (elapsedTimer) { clearInterval(elapsedTimer); elapsedTimer = null; }
+}
+
+function getLabel() {
+  const label = document.getElementById('run-label').value.trim();
+  if (!label) {
+    alert('Geef eerst een Run Label op (bv. "Neo - 8GB" of "Air M3").');
+    document.getElementById('run-label').focus();
+    return null;
+  }
+  return label;
+}
+
+function disableButtons(d) {
+  ['run-all','run-quick','run-sustained-only','run-teams-only'].forEach(id => {
+    document.getElementById(id).disabled = d;
+  });
+}
+
+async function runFullSuite(opts = { quick: false, only: null }) {
+  const label = getLabel();
+  if (!label) return;
+  disableButtons(true);
+  TESTS.forEach(t => {
+    setResult(t.id, '—', '');
+    setStatus(t.id, '');
+  });
+  startElapsed();
+
+  const results = {};
+  const device = {
+    cores: navigator.hardwareConcurrency || 'n/a',
+    deviceMemory: navigator.deviceMemory || null,
+    userAgent: navigator.userAgent,
+    platform: navigator.userAgentData?.platform || navigator.platform,
+  };
+  log('=== START RUN: ' + label + ' ===', 'in');
+
+  const shouldRun = (id) => {
+    if (opts.only) return opts.only === id;
+    if (opts.quick && id === 'sustained') return false;
+    return true;
+  };
+
+  try {
+    if (shouldRun('single')) {
+      setStatus('single', 'running'); setResult('single', 'running…', 'running');
+      log('→ Single-thread CPU…');
+      const r = await benchSingle(3000);
+      results.single = r;
+      setResult('single', r.opsPerSec.toFixed(0) + ' ops/s'); setStatus('single', 'done');
+      log('✓ Single: ' + r.opsPerSec.toFixed(0) + ' ops/s', 'ok');
+    }
+
+    if (shouldRun('multi')) {
+      setStatus('multi', 'running'); setResult('multi', 'running…', 'running');
+      log('→ Multi-thread CPU (' + (navigator.hardwareConcurrency || '?') + ' cores)…');
+      const r = await benchMulti(3000);
+      results.multi = r;
+      setResult('multi', r.opsPerSec.toFixed(0) + ' ops/s'); setStatus('multi', 'done');
+      log('✓ Multi: ' + r.opsPerSec.toFixed(0) + ' ops/s (' + r.cores + ' cores)', 'ok');
+    }
+
+    if (shouldRun('mem')) {
+      setStatus('mem', 'running'); setResult('mem', 'running…', 'running');
+      log('→ Memory bandwidth…');
+      const r = await benchMemory(64);
+      results.mem = r;
+      setResult('mem', r.combinedMBps.toFixed(0) + ' MB/s'); setStatus('mem', 'done');
+      log('✓ Memory: W=' + r.writeMBps.toFixed(0) + ' R=' + r.readMBps.toFixed(0) + ' MB/s', 'ok');
+    }
+
+    if (shouldRun('dom')) {
+      setStatus('dom', 'running'); setResult('dom', 'running…', 'running');
+      log('→ DOM render…');
+      const r = await benchDOM(8000);
+      results.dom = r;
+      setResult('dom', r.elemsPerSec.toFixed(0) + ' el/s'); setStatus('dom', 'done');
+      log('✓ DOM: 8000 in ' + r.elapsedMs.toFixed(0) + ' ms', 'ok');
+    }
+
+    if (shouldRun('fps')) {
+      setStatus('fps', 'running'); setResult('fps', 'running…', 'running');
+      log('→ Canvas FPS (5s)…');
+      const r = await benchFPS(5000);
+      results.fps = r;
+      setResult('fps', r.fps.toFixed(1) + ' fps'); setStatus('fps', 'done');
+      log('✓ Canvas: ' + r.fps.toFixed(1) + ' fps', 'ok');
+    }
+
+    if (shouldRun('memPressure')) {
+      setStatus('memPressure', 'running'); setResult('memPressure', 'running…', 'running');
+      log('→ Memory pressure (alloc 256 MB progressively)…');
+      const r = await benchMemPressure(256, 16);
+      results.memPressure = r;
+      setResult('memPressure', r.score.toFixed(1) + '% (' + r.spikes + ' spikes)'); setStatus('memPressure', 'done');
+      log('✓ MemPressure: ' + r.spikes + ' allocation spikes, score=' + r.score.toFixed(1) + '%', 'ok');
+    }
+
+    if (shouldRun('teams')) {
+      setStatus('teams', 'running'); setResult('teams', 'running…', 'running');
+      log('→ Teams sim (15s: 4× video + blur + chat churn)…');
+      const r = await benchTeams(15000);
+      results.teams = r;
+      setResult('teams', r.fps.toFixed(1) + ' fps'); setStatus('teams', 'done');
+      log('✓ Teams sim: ' + r.fps.toFixed(1) + ' fps, ' + r.chatItemsRendered + ' chat items', 'ok');
+    }
+
+    if (shouldRun('sustained')) {
+      setStatus('sustained', 'running'); setResult('sustained', 'running…', 'running');
+      const sustainedSec = parseInt(document.getElementById('sustained-sec').value) || 120;
+      const sampleSec = parseInt(document.getElementById('sample-sec').value) || 3;
+      log('→ Sustained load (' + sustainedSec + 's, sample every ' + sampleSec + 's)…');
+      currentSustainedSamples = [];
+      const allRuns = await loadAllRuns();
+      const r = await benchSustained(sustainedSec, sampleSec, (sample, all) => {
+        currentSustainedSamples = all;
+        if (currentBaseline == null) currentBaseline = all[0].opsPerSec;
+        drawThrottleChart(currentSustainedSamples, currentBaseline, allRuns);
+        const pct = ((sample.opsPerSec / currentBaseline) * 100).toFixed(0);
+        setResult('sustained', 't=' + sample.tSec.toFixed(0) + 's @ ' + pct + '%', 'running');
+        log('  sample t=' + sample.tSec.toFixed(0) + 's: ' + sample.opsPerSec.toFixed(0) + ' ops/s (' + pct + '%)');
+      });
+      results.sustained = r;
+      const badge = r.throttlePct < 10 ? 'green' : r.throttlePct < 30 ? 'amber' : 'red';
+      const summary = 'throttle ' + r.throttlePct.toFixed(1) + '%';
+      setResult('sustained', summary); setStatus('sustained', 'done');
+      document.getElementById('throttle-summary').innerHTML =
+        '<span class="throttle-badge ' + badge + '">' + summary + '</span>';
+      log('✓ Sustained: throttle ' + r.throttlePct.toFixed(1) + '% (' + r.sustainedOpsPerSec.toFixed(0) + ' vs baseline ' + r.baselineOpsPerSec.toFixed(0) + ')', 'ok');
+    }
+
+    // Save run
+    const run = {
+      label,
+      timestamp: Date.now(),
+      device,
+      results,
+    };
+    await saveRun(run);
+    log('=== RUN SAVED ===', 'ok');
+    await renderHistoryAndCompare();
+  } catch (e) {
+    log('ERROR: ' + e.message, 'warn');
+    console.error(e);
+  } finally {
+    disableButtons(false);
+    stopElapsed();
+  }
+}
+
+// ============================================================
+// BUTTONS
+// ============================================================
+document.getElementById('run-all').addEventListener('click', () => runFullSuite({ quick: false }));
+document.getElementById('run-quick').addEventListener('click', () => runFullSuite({ quick: true }));
+document.getElementById('run-sustained-only').addEventListener('click', () => runFullSuite({ only: 'sustained' }));
+document.getElementById('run-teams-only').addEventListener('click', () => runFullSuite({ only: 'teams' }));
+
+document.getElementById('clear-all').addEventListener('click', async () => {
+  if (confirm('Alle opgeslagen runs verwijderen?')) {
+    await clearAllRuns();
+    currentSustainedSamples = [];
+    currentBaseline = null;
+    document.getElementById('throttle-summary').innerHTML = '';
+    drawThrottleChart([], null, []);
+    await renderHistoryAndCompare();
+    log('All runs cleared.', 'warn');
+  }
+});
+
+document.getElementById('export-btn').addEventListener('click', async () => {
+  const runs = await loadAllRuns();
+  const blob = new Blob([JSON.stringify(runs, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'macbook-benchmark-runs.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  log('Exported ' + runs.length + ' runs to JSON.', 'ok');
+});
+
+// ============================================================
+// INIT
+// ============================================================
+(async () => {
+  log('benchmark.js ready. Cores=' + (navigator.hardwareConcurrency || '?'));
+  await renderHistoryAndCompare();
+})();
+
+// Window resize redraws chart
+window.addEventListener('resize', async () => {
+  const runs = await loadAllRuns();
+  drawThrottleChart(currentSustainedSamples, currentBaseline, runs);
+});
+</script>
+</body>
+</html>
